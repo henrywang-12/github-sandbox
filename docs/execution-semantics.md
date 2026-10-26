@@ -33,14 +33,14 @@ An unresolved outcome is a first-class state. It must not silently become either
 
 Let a grant contain a principal, operation, resource scope, parameter constraints, expiry, and consumption rule. The admission predicate is conceptually:
 
-\[
+$$
 \operatorname{admit}(a,g,s,t) =
 \operatorname{authenticated}(g)
 \land \operatorname{scoped}(a,g)
 \land \operatorname{fresh}(g,t)
 \land \operatorname{precondition}(a,s)
 \land \operatorname{available}(g)
-\]
+$$
 
 For a single-use approval, reserving or consuming the grant and recording the operation must be atomic within the coordinator's storage boundary. Consumption creates a durable authorization binding to that operation, not permission for another operation. Redispatch can use that binding only for the identical request, while its scope, expiry, and revocation checks still pass, and while duplicate suppression or authoritative no-effect evidence makes repeating it safe. Otherwise renewed authority or intervention is required. A local transaction cannot atomically include an arbitrary remote provider. That gap requires reconciliation, not stronger wording in the grant.
 

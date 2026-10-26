@@ -18,9 +18,9 @@ The difficult part is preserving authority, meaning, and recoverability when a p
 
 A useful decomposition is:
 
-\[
+$$
 \text{Software experience} = \text{persistent state} + \text{capability contracts} + \text{interaction projection}
-\]
+$$
 
 The projection might be a mobile app, a generated form, a conversational turn, or an agent tool call. Multiple projections should share domain semantics and authorization rules. A calendar entry created through conversation should remain inspectable and editable through a conventional interface.
 
@@ -30,9 +30,9 @@ This does not imply that every interface should be generated. Stable spatial int
 
 Natural language is an input modality, not an executable specification. Represent an interpreted intent as:
 
-\[
+$$
 I = (G, C, A, E)
-\]
+$$
 
 - **G — goal:** a proposed target condition over observable state.
 - **C — constraints:** time, cost, privacy, and domain restrictions.
@@ -41,17 +41,17 @@ I = (G, C, A, E)
 
 For “organize dinner on Friday,” the goal may be a confirmed booking for four people; constraints include a time window and budget. Authority might permit searching and drafting, while requiring approval before a reservation. Evidence is the provider's booking record, rather than the planner's assertion that it succeeded.
 
-A planner proposes a policy \(\pi\) under partial observability. The runtime admits only actions whose contract preconditions and authorization predicates hold. Planner output is a candidate program, not a source of permission.
+A planner proposes a policy $\pi$ under partial observability. The runtime admits only actions whose contract preconditions and authorization predicates hold. Planner output is a candidate program, not a source of permission.
 
 ## 3. Capabilities as effectful contracts
 
 Define a capability as:
 
-\[
+$$
 K = (X, Y, P, Q, F, V)
-\]
+$$
 
-Here \(X\) and \(Y\) are input and output types; \(P\) is the precondition; \(Q\) describes the promised postcondition on success; \(F\) declares effects; and \(V\) identifies the contract version. The runtime must also represent failure and indeterminate outcomes explicitly.
+Here $X$ and $Y$ are input and output types; $P$ is the precondition; $Q$ describes the promised postcondition on success; $F$ declares effects; and $V$ identifies the contract version. The runtime must also represent failure and indeterminate outcomes explicitly.
 
 An effect declaration must distinguish reading information, changing private state, communicating externally, and incurring financial obligations. A valid JSON response proves structural conformance only. It does not prove that an appointment exists or that a recipient received a message.
 
@@ -87,7 +87,7 @@ See [Execution semantics](docs/execution-semantics.md) for the proposed lifecycl
 
 The web makes documents addressable. APIs make operations callable. Agent-accessible software additionally needs operations to be discoverable, semantically legible, permissioned, and verifiable across organizational boundaries.
 
-Model this as a changing graph \(\mathcal{G}_t=(\mathcal{K}_t,\mathcal{E}_t)\), where nodes are capability contracts and edges represent admissible compositions. An edge is conditional on compatible semantics, identity, authority, and current state. A catalog of tool descriptions alone is not such a graph.
+Model this as a changing graph $\mathcal{G}_t=(\mathcal{K}_t,\mathcal{E}_t)$, where nodes are capability contracts and edges represent admissible compositions. An edge is conditional on compatible semantics, identity, authority, and current state. A catalog of tool descriptions alone is not such a graph.
 
 The architectural hypothesis is that more workflows will be assembled over this graph at execution time. Services could be discovered through an intent rather than an app-store search, while durable identity and reputation remain attached to the service provider. Interfaces become contextual entry points into a persistent service economy.
 

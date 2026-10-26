@@ -44,10 +44,10 @@ Map `Verified` to verified success and `Rejected` or `Failed` to known failure, 
 
 Report a cost vector rather than one flattering score:
 
-\[
+$$
 \mathbf{c} = (\text{user time}, \text{runtime cost}, \text{unauthorized effects},
 \text{recovery effort}, \text{unresolved outcomes})
-\]
+$$
 
 If a scalar objective is necessary, publish the weights and a sensitivity analysis. A preference for speed should not silently erase the cost of an unauthorized action.
 
