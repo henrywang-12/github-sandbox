@@ -14,6 +14,11 @@ python3 demo/runtime.py --state-dir /tmp/intent-demo-example
 python3 -m unittest discover -s demo -v
 ```
 
+[Demo correctness CI](../.github/workflows/demo.yml) runs tests, recovery scenarios,
+and a smoke test on Python 3.10 and 3.13. The workflow has read-only repository
+permissions, does not persist checkout credentials, and uses pinned official
+GitHub Actions. It does not deploy anything or call real providers.
+
 Use a fresh directory to start an empty experiment. Each demo run creates one
 new operation. Repeating that *operation* is deduplicated; running the CLI again
 is a new operation, not a replay.
