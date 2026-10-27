@@ -48,6 +48,10 @@ commits each event with its state change. This is an inspection log, not a
 tamper-proof audit system; existing databases have no reconstructed history for
 events that occurred before this feature was added.
 
+`Runtime.cancel(operation)` permanently cancels an undispatched proposal or
+authorized operation. It does not cancel a restaurant booking. Once dispatched,
+an operation must be reconciled; cancellation cannot erase an unknown effect.
+
 This is a single-process teaching model, not a production authorization service.
 The trusted local caller can approve or revoke operations; no user authentication
 is implemented. Anyone with database access can alter records. It assumes no
