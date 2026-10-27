@@ -16,7 +16,17 @@ class Runtime:
         directory.mkdir(parents=True, exist_ok=True)
         self.clock = clock
         self.db = sqlite3.connect(directory / 'coordinator.sqlite')
-        self.provider = sqlite3.connect(directory / 'provider.sqlite')
+        self._closed = False
+        try:
+            self.provider = sqlite3.connect(directory / 'provider.sqlite')
+            for connection in (self.db, self.provider):
+                if connection.execute('PRAGMA user_version').fetchone()[0] > 1:
+                    raise ValueError('database schema is newer than this demo supports')
+        except Exception:
+            self.db.close()
+            if hasattr(self, 'provider'):
+                self.provider.close()
+            raise
         self.db.execute('''CREATE TABLE IF NOT EXISTS operations (
             id TEXT PRIMARY KEY, payload TEXT NOT NULL, state TEXT NOT NULL,
             expires REAL, revoked INTEGER NOT NULL DEFAULT 0, receipt TEXT)''')
@@ -27,10 +37,20 @@ class Runtime:
             kind TEXT NOT NULL, at REAL NOT NULL, detail TEXT NOT NULL)''')
         self.db.commit()
         self.provider.commit()
+        for connection in (self.db, self.provider):
+            connection.execute('PRAGMA user_version=1')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     def close(self):
-        self.db.close()
-        self.provider.close()
+        if not self._closed:
+            self.db.close()
+            self.provider.close()
+            self._closed = True
 
     def propose(self, restaurant, people):
         if (not isinstance(restaurant, str) or not restaurant.strip()
