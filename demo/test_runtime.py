@@ -1,4 +1,7 @@
+from contextlib import closing
 import tempfile
+import sqlite3
+from pathlib import Path
 import unittest
 from runtime import Runtime
 
@@ -155,6 +158,32 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.runtime.execute(self.operation)
         self.assertEqual(self.runtime.booking_count(), 0)
+
+    def test_context_manager_closes_connections_on_exception(self):
+        with self.assertRaises(RuntimeError):
+            with Runtime(self.directory.name) as runtime:
+                raise RuntimeError('caller failed')
+        with self.assertRaises(sqlite3.ProgrammingError):
+            runtime.booking_count()
+        runtime.close()
+
+    def test_future_storage_schema_is_rejected_without_downgrade(self):
+        self.runtime.close()
+        database = Path(self.directory.name) / 'provider.sqlite'
+        with closing(sqlite3.connect(database)) as connection:
+            connection.execute('PRAGMA user_version=99')
+        with self.assertRaises(ValueError):
+            Runtime(self.directory.name)
+        with closing(sqlite3.connect(database)) as connection:
+            self.assertEqual(connection.execute('PRAGMA user_version').fetchone()[0], 99)
+
+    def test_legacy_version_zero_data_survives_open(self):
+        for connection in (self.runtime.db, self.runtime.provider):
+            connection.execute('PRAGMA user_version=0')
+        self.runtime.close()
+        self.runtime = Runtime(self.directory.name)
+        self.assertEqual(self.runtime.inspect(self.operation)['request']['people'], 4)
+        self.assertEqual(self.runtime.db.execute('PRAGMA user_version').fetchone()[0], 1)
 
 
 if __name__ == '__main__':

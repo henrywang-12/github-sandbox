@@ -49,6 +49,11 @@ and stays `indeterminate`, with no blind redispatch.
 
 ## Boundaries
 
+Use `with Runtime(directory) as runtime:` in integrations to close both database
+connections even if the caller raises. Schema version 1 opens legacy version-zero
+databases without deleting their rows and refuses a newer unsupported version.
+Back up local state before experimenting with database files.
+
 `Runtime.history(operation)` returns ordered, durable state events. The coordinator
 commits each event with its state change. This is an inspection log, not a
 tamper-proof audit system; existing databases have no reconstructed history for
