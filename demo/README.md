@@ -41,6 +41,12 @@ To explore manually, import `Runtime` from `demo/runtime.py`. Call `propose`,
 inspect the returned operation, then pass its exact `request` to `approve`.
 `execute(operation, lose_response=True)` injects the lost-response case.
 
+`execute(operation, fault=...)` accepts `before_provider`, `provider_reject`,
+or `after_provider`. Crash injections raise `RuntimeError`; reopen the runtime
+and execute the same operation to observe recovery. A simulated rejection is a
+known `failed` outcome. A crash before the provider leaves insufficient evidence
+and stays `indeterminate`, with no blind redispatch.
+
 ## Boundaries
 
 `Runtime.history(operation)` returns ordered, durable state events. The coordinator

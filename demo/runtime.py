@@ -112,7 +112,10 @@ class Runtime:
                             (state, receipt, operation))
             self._event(operation, state, {'receipt': receipt} if receipt else {})
 
-    def execute(self, operation, lose_response=False):
+    def execute(self, operation, lose_response=False, fault=None):
+        """Inject local failures: before_provider, provider_reject, after_provider."""
+        if fault not in (None, 'before_provider', 'provider_reject', 'after_provider'):
+            raise ValueError('unsupported fault injection point')
         current = self.inspect(operation)
         if current['state'] == 'verified':
             return current
@@ -124,6 +127,11 @@ class Runtime:
         if current['revoked'] or self.clock() >= current['expires']:
             raise PermissionError('approval expired or was revoked')
         self._state(operation, 'executing')  # durable before provider dispatch
+        if fault == 'before_provider':
+            raise RuntimeError('simulated crash before provider call')
+        if fault == 'provider_reject':
+            self._state(operation, 'failed')
+            return self.inspect(operation)
         payload = json.dumps(current['request'], sort_keys=True, separators=(',', ':'))
         receipt = 'booking-' + operation
         # The toy provider guarantees permanent deduplication by operation ID.
@@ -135,6 +143,8 @@ class Runtime:
                                            (operation,)).fetchone()[0]
             if stored != payload:
                 raise ValueError('operation identity reused with changed parameters')
+        if fault == 'after_provider':
+            raise RuntimeError('simulated crash after provider commit')
         if lose_response:
             self._state(operation, 'indeterminate')
             return self.inspect(operation)
