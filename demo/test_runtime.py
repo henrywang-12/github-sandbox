@@ -84,6 +84,17 @@ class RuntimeTests(unittest.TestCase):
             self.approve()
         self.assertEqual(self.runtime.inspect(self.operation)['expires'], 160)
 
+    def test_invalid_names_and_approval_lifetimes(self):
+        for name in ('', '  ', 'x' * 121, 'Example\nKitchen', 'Example\x7f'):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                self.runtime.propose(name, 4)
+        for ttl in (True, 0, -1, 3601, float('nan'), float('inf')):
+            with self.subTest(ttl=ttl), self.assertRaises(ValueError):
+                self.runtime.approve(self.operation, self.runtime.inspect(self.operation)['request'], ttl)
+        with self.assertRaises(ValueError):
+            self.runtime.approve(self.operation, {'people': object()})
+        self.assertEqual(self.runtime.booking_count(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
