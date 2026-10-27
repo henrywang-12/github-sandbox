@@ -55,6 +55,18 @@ failure gap visible without claiming a transaction spanning separate services.
 
 ## Experiments
 
+```sh
+python3 demo/scenarios.py
+```
+
+The scenario runner creates fresh temporary databases and reports nine expected
+outcomes as JSON: success, no approval, expiry, revocation, cancellation, lost
+response, crashes before and after provider commit, and provider rejection.
+All cases reopen the coordinator; verified cases replay and recheck receipt
+evidence. Exit code 0 means the expected outcomes matched, not that every task
+succeeded. The intentionally indeterminate case remains unresolved. This is a
+correctness regression suite, not evidence about AI model quality or latency.
+
 The tests cover changed approval parameters, expired and revoked grants,
 missing or mismatched provider evidence, and recovery after restart. They also
 verify that repeated execution produces one provider booking.
