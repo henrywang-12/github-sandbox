@@ -1,0 +1,149 @@
+"""Local intent execution experiment. No networking, credentials, or real bookings."""
+import argparse
+import json
+import sqlite3
+import time
+import uuid
+from pathlib import Path
+
+
+class Runtime:
+    """Trusted local API; approval here is a simulation, not authentication."""
+
+    def __init__(self, directory, clock=time.time):
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        self.clock = clock
+        self.db = sqlite3.connect(directory / 'coordinator.sqlite')
+        self.provider = sqlite3.connect(directory / 'provider.sqlite')
+        self.db.execute('''CREATE TABLE IF NOT EXISTS operations (
+            id TEXT PRIMARY KEY, payload TEXT NOT NULL, state TEXT NOT NULL,
+            expires REAL, revoked INTEGER NOT NULL DEFAULT 0, receipt TEXT)''')
+        self.provider.execute('''CREATE TABLE IF NOT EXISTS bookings (
+            operation TEXT PRIMARY KEY, payload TEXT NOT NULL, receipt TEXT NOT NULL)''')
+        self.db.commit()
+        self.provider.commit()
+
+    def close(self):
+        self.db.close()
+        self.provider.close()
+
+    def propose(self, restaurant, people):
+        if not isinstance(restaurant, str) or not restaurant.strip():
+            raise ValueError('restaurant must be a nonempty string')
+        if type(people) is not int or not 1 <= people <= 12:
+            raise ValueError('people must be an integer from 1 to 12')
+        operation = str(uuid.uuid4())
+        payload = json.dumps({'restaurant': restaurant.strip(), 'people': people},
+                             sort_keys=True, separators=(',', ':'))
+        with self.db:
+            self.db.execute('INSERT INTO operations(id,payload,state) VALUES(?,?,?)',
+                            (operation, payload, 'proposed'))
+        return operation
+
+    def inspect(self, operation):
+        row = self.db.execute('SELECT payload,state,expires,revoked,receipt '
+                              'FROM operations WHERE id=?', (operation,)).fetchone()
+        if row is None:
+            raise KeyError(operation)
+        return dict(id=operation, request=json.loads(row[0]), state=row[1],
+                    expires=row[2], revoked=bool(row[3]), receipt=row[4])
+
+    def approve(self, operation, reviewed_request, ttl=60):
+        """Bind a simulated human decision to the exact stored proposal."""
+        if type(ttl) not in (int, float) or not 0 < ttl <= 3600:
+            raise ValueError('ttl must be positive and at most 3600 seconds')
+        current = self.inspect(operation)
+        if current['state'] != 'proposed':
+            raise ValueError('only a new proposal may be approved')
+        # Compare canonical encodings: Python equality conflates 1 and True.
+        canonical = lambda value: json.dumps(value, sort_keys=True, separators=(',', ':'))
+        if canonical(reviewed_request) != canonical(current['request']):
+            raise ValueError('reviewed request differs from proposal')
+        with self.db:
+            self.db.execute('UPDATE operations SET state=?,expires=? WHERE id=?',
+                            ('authorized', self.clock() + ttl, operation))
+
+    def revoke(self, operation):
+        self.inspect(operation)
+        with self.db:
+            self.db.execute('UPDATE operations SET revoked=1 WHERE id=?', (operation,))
+
+    def _state(self, operation, state, receipt=None):
+        with self.db:
+            self.db.execute('UPDATE operations SET state=?,receipt=? WHERE id=?',
+                            (state, receipt, operation))
+
+    def execute(self, operation, lose_response=False):
+        current = self.inspect(operation)
+        if current['state'] == 'verified':
+            return current
+        if current['state'] in ('executing', 'indeterminate'):
+            # Recovery is read-only. Never blindly redispatch an unknown effect.
+            return self.reconcile(operation)
+        if current['state'] != 'authorized':
+            raise PermissionError('explicit approval is required')
+        if current['revoked'] or self.clock() >= current['expires']:
+            raise PermissionError('approval expired or was revoked')
+        self._state(operation, 'executing')  # durable before provider dispatch
+        payload = json.dumps(current['request'], sort_keys=True, separators=(',', ':'))
+        receipt = 'booking-' + operation
+        # The toy provider guarantees permanent deduplication by operation ID.
+        # Its separate transaction models an external service commit boundary.
+        with self.provider:
+            self.provider.execute('INSERT OR IGNORE INTO bookings VALUES(?,?,?)',
+                                  (operation, payload, receipt))
+            stored = self.provider.execute('SELECT payload FROM bookings WHERE operation=?',
+                                           (operation,)).fetchone()[0]
+            if stored != payload:
+                raise ValueError('operation identity reused with changed parameters')
+        if lose_response:
+            self._state(operation, 'indeterminate')
+            return self.inspect(operation)
+        return self.reconcile(operation)
+
+    def reconcile(self, operation):
+        current = self.inspect(operation)
+        if current['state'] not in ('executing', 'indeterminate', 'verified'):
+            raise ValueError('only dispatched operations can be reconciled')
+        row = self.provider.execute('SELECT payload,receipt FROM bookings WHERE operation=?',
+                                    (operation,)).fetchone()
+        expected = json.dumps(current['request'], sort_keys=True, separators=(',', ':'))
+        if row and row[0] == expected:
+            self._state(operation, 'verified', row[1])
+        else:
+            self._state(operation, 'indeterminate')
+        return self.inspect(operation)
+
+    def booking_count(self):
+        return self.provider.execute('SELECT count(*) FROM bookings').fetchone()[0]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--state-dir', default='.demo-state')
+    args = parser.parse_args()
+    runtime = Runtime(args.state_dir)
+    operation = runtime.propose('Example Kitchen', 4)
+    print('1. Proposed:', runtime.inspect(operation))
+    try:
+        runtime.execute(operation)
+    except PermissionError as error:
+        print('2. Blocked before approval:', error)
+    runtime.approve(operation, runtime.inspect(operation)['request'])
+    print('3. Simulated human approval recorded for this exact request.')
+    print('4. Provider commits; response lost:',
+          runtime.execute(operation, lose_response=True)['state'])
+    runtime.close()
+    runtime = Runtime(args.state_dir)
+    print('5. Restart and reconcile:', runtime.execute(operation)['state'])
+    print('6. Repeat operation:', runtime.execute(operation)['state'])
+    receipt = runtime.inspect(operation)['receipt']
+    print('7. Verified receipt:', receipt)
+    print('8. Bookings for this operation:', runtime.provider.execute(
+        'SELECT count(*) FROM bookings WHERE operation=?', (operation,)).fetchone()[0])
+    runtime.close()
+
+
+if __name__ == '__main__':
+    main()
