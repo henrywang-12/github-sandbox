@@ -14,7 +14,7 @@ def main(argv=None):
     propose.add_argument('--restaurant', required=True)
     propose.add_argument('--people', type=int, required=True)
     commands.add_parser('list').add_argument('--limit', type=int, default=20)
-    for name in ('inspect', 'history', 'reconcile', 'cancel', 'revoke', 'approve', 'execute'):
+    for name in ('inspect', 'history', 'reconcile', 'cancel', 'revoke', 'approve', 'execute', 'receipt'):
         sub = commands.add_parser(name)
         sub.add_argument('operation')
         if name == 'approve':
@@ -39,6 +39,8 @@ def main(argv=None):
             elif command == 'revoke':
                 runtime.revoke(args.operation)
                 result = runtime.inspect(args.operation)
+            elif command == 'receipt':
+                result = runtime.export_receipt(args.operation)
             else:
                 result = getattr(runtime, command)(args.operation)
         print(json.dumps(result, sort_keys=True))

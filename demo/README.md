@@ -27,6 +27,12 @@ JSON on stdout; runtime errors are JSON on stderr with exit code 2. Parser usage
 errors use argparse's ordinary text output. Approval remains a trusted local
 simulation, not user authentication.
 
+`receipt OPERATION` exports a versioned JSON evidence record. It requires a verified
+coordinator outcome and matching provider data at export time. You can redirect
+stdout to a local JSON file. The export proves only a matching simulated provider
+record; it is not signed or proof of a real-world reservation. It includes the
+request, so inspect it before sharing.
+
 ```sh
 python3 demo/cli.py --state-dir /tmp/my-intents propose --restaurant Example --people 2
 # Use the returned id in place of OPERATION below:

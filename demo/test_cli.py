@@ -29,6 +29,9 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.call('reconcile', operation)['state'], 'verified')
         self.assertEqual(len(self.call('list')['operations']), 1)
         self.assertEqual(self.call('history', operation)[-1]['kind'], 'verified')
+        receipt = self.call('receipt', operation)
+        self.assertEqual(receipt['operation'], operation)
+        self.assertEqual(receipt['schema_version'], 1)
 
     def test_invalid_requests_and_missing_operation_return_json_errors(self):
         self.assertEqual(self.call('inspect', 'missing', expected=2)['type'], 'KeyError')
