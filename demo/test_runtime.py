@@ -185,6 +185,20 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(self.runtime.inspect(self.operation)['request']['people'], 4)
         self.assertEqual(self.runtime.db.execute('PRAGMA user_version').fetchone()[0], 1)
 
+    def test_receipt_export_requires_matching_provider_evidence(self):
+        with self.assertRaises(ValueError):
+            self.runtime.export_receipt(self.operation)
+        self.approve()
+        self.runtime.execute(self.operation)
+        receipt = self.runtime.export_receipt(self.operation)
+        self.assertEqual(receipt['request']['people'], 4)
+        self.assertEqual(receipt['evidence_scope'], 'local-simulated-provider-record')
+        with self.runtime.provider:
+            self.runtime.provider.execute('UPDATE bookings SET receipt=? WHERE operation=?',
+                                          ('tampered', self.operation))
+        with self.assertRaises(ValueError):
+            self.runtime.export_receipt(self.operation)
+
 
 if __name__ == '__main__':
     unittest.main()

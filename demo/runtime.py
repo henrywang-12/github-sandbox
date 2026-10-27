@@ -192,6 +192,19 @@ class Runtime:
         return [self.inspect(row[0]) for row in self.db.execute(
             'SELECT id FROM operations ORDER BY rowid DESC LIMIT ?', (limit,)).fetchall()]
 
+    def export_receipt(self, operation):
+        """Export evidence only after checking both coordinator and provider records."""
+        current = self.inspect(operation)
+        if current['state'] != 'verified':
+            raise ValueError('only verified operations have exportable receipts')
+        row = self.provider.execute('SELECT payload,receipt FROM bookings WHERE operation=?',
+                                    (operation,)).fetchone()
+        expected = json.dumps(current['request'], sort_keys=True, separators=(',', ':'))
+        if not row or row[0] != expected or row[1] != current['receipt']:
+            raise ValueError('provider evidence no longer matches the verified record')
+        return dict(schema_version=1, operation=operation, request=current['request'],
+                    provider_reference=row[1], evidence_scope='local-simulated-provider-record')
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
