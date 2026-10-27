@@ -6,6 +6,17 @@
 
 **Status:** public position paper and research agenda. The architecture below is a proposal, not a description of Walify's deployed systems. This repository began as a GitHub workflow sandbox and now develops the thesis in public.
 
+## Run the demo
+
+The [local execution demo](demo/README.md) implements a small, deterministic subset of the proposed lifecycle: exact-request approval, expiry and revocation, a simulated provider write, lost-response recovery, and receipt verification. It uses Python and SQLite, with no dependencies, credentials, real bookings, or external calls.
+
+```sh
+python3 demo/runtime.py --state-dir /tmp/intent-demo-example
+python3 -m unittest discover -s demo -v
+```
+
+This demonstrates execution mechanics, not general AI planning or production security.
+
 ## Abstract
 
 The application is a convenient distribution boundary, but often an inconvenient execution boundary. A task such as organizing an evening crosses calendars, messages, reservations, and payments, while the user must repeatedly translate the same intention into each application's interaction model.
@@ -130,4 +141,4 @@ The thesis is useful only if it survives comparisons against strong conventional
 | [Ecosystem-native agents](docs/ecosystem-native-agents.md) | How do super-app ecosystems affect agents and platform power? |
 | [References](REFERENCES.md) | Which established ideas does this proposal build on? |
 
-This repository is a conceptual essay, not a benchmark, protocol standard, or implementation. No experimental results are claimed.
+This repository contains a conceptual essay and a local teaching demo of selected execution mechanics. It is not a benchmark, protocol standard, or production implementation. No comparative experimental results are claimed.
