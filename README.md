@@ -99,6 +99,12 @@ If assembling an interface becomes inexpensive, defensibility may shift toward t
 
 One possible equilibrium is a small number of intent-routing platforms. Another is an interoperable ecosystem of independently operated services. The first may lower integration friction while concentrating discovery and identity. The second requires stronger shared contracts and credible portability. Technical interoperability alone does not decide the economic outcome.
 
+## 6A. Ecosystem-native agents: China, the US, and the web
+
+The next competitive advantage may come from the execution environment around a model: discoverable services, scoped authority, transaction infrastructure, and evidence of completed effects. Tencent's Weixin service substrate and Alibaba's Qwen commerce integrations illustrate different parts of this pattern; US platforms are also integrating third-party services.
+
+The [new comparative chapter](docs/ecosystem-native-agents.md) examines those documented developments, explains why ecosystem integration can improve agent effectiveness, and develops the hypothesis that a web-wide intent gateway could acquire substantial platform power. It distinguishes a conditional winner-takes-most dynamic from an inevitable monopoly.
+
 ## 7. The Walify connection
 
 The direction I want to explore with Walify is a low-friction environment in which people and AI agents can use software services. Consumer mobile experiences are the opening context for that thesis; broader creator, business, and community participation is a longer-term possibility.
@@ -121,6 +127,7 @@ The thesis is useful only if it survives comparisons against strong conventional
 |---|---|
 | [Execution semantics](docs/execution-semantics.md) | How can uncertain planning interact with durable effects? |
 | [Research agenda](docs/research-agenda.md) | Which experiments would support or weaken these claims? |
+| [Ecosystem-native agents](docs/ecosystem-native-agents.md) | How do super-app ecosystems affect agents and platform power? |
 | [References](REFERENCES.md) | Which established ideas does this proposal build on? |
 
 This repository is a conceptual essay, not a benchmark, protocol standard, or implementation. No experimental results are claimed.
