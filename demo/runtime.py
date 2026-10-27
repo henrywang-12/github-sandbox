@@ -22,6 +22,9 @@ class Runtime:
             expires REAL, revoked INTEGER NOT NULL DEFAULT 0, receipt TEXT)''')
         self.provider.execute('''CREATE TABLE IF NOT EXISTS bookings (
             operation TEXT PRIMARY KEY, payload TEXT NOT NULL, receipt TEXT NOT NULL)''')
+        self.db.execute('''CREATE TABLE IF NOT EXISTS events (
+            sequence INTEGER PRIMARY KEY AUTOINCREMENT, operation TEXT NOT NULL,
+            kind TEXT NOT NULL, at REAL NOT NULL, detail TEXT NOT NULL)''')
         self.db.commit()
         self.provider.commit()
 
@@ -42,6 +45,7 @@ class Runtime:
         with self.db:
             self.db.execute('INSERT INTO operations(id,payload,state) VALUES(?,?,?)',
                             (operation, payload, 'proposed'))
+            self._event(operation, 'proposed')
         return operation
 
     def inspect(self, operation):
@@ -70,16 +74,30 @@ class Runtime:
         with self.db:
             self.db.execute('UPDATE operations SET state=?,expires=? WHERE id=?',
                             ('authorized', self.clock() + ttl, operation))
+            self._event(operation, 'authorized', {'expires': self.clock() + ttl})
 
     def revoke(self, operation):
         self.inspect(operation)
         with self.db:
             self.db.execute('UPDATE operations SET revoked=1 WHERE id=?', (operation,))
+            self._event(operation, 'revoked')
+
+    def _event(self, operation, kind, detail=None):
+        # Caller owns the transaction, so each state change and event commit together.
+        self.db.execute('INSERT INTO events(operation,kind,at,detail) VALUES(?,?,?,?)',
+                        (operation, kind, self.clock(), json.dumps(detail or {}, sort_keys=True)))
+
+    def history(self, operation):
+        self.inspect(operation)
+        return [dict(sequence=row[0], kind=row[1], at=row[2], detail=json.loads(row[3]))
+                for row in self.db.execute('SELECT sequence,kind,at,detail FROM events '
+                                          'WHERE operation=? ORDER BY sequence', (operation,))]
 
     def _state(self, operation, state, receipt=None):
         with self.db:
             self.db.execute('UPDATE operations SET state=?,receipt=? WHERE id=?',
                             (state, receipt, operation))
+            self._event(operation, state, {'receipt': receipt} if receipt else {})
 
     def execute(self, operation, lose_response=False):
         current = self.inspect(operation)

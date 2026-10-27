@@ -95,6 +95,24 @@ class RuntimeTests(unittest.TestCase):
             self.runtime.approve(self.operation, {'people': object()})
         self.assertEqual(self.runtime.booking_count(), 0)
 
+    def test_durable_ordered_operation_history(self):
+        self.approve()
+        self.runtime.execute(self.operation, lose_response=True)
+        self.runtime.close()
+        self.runtime = Runtime(self.directory.name, clock=lambda: self.now)
+        self.runtime.reconcile(self.operation)
+        history = self.runtime.history(self.operation)
+        self.assertEqual([e['kind'] for e in history],
+                         ['proposed', 'authorized', 'executing', 'indeterminate', 'verified'])
+        self.assertEqual([e['sequence'] for e in history], sorted(e['sequence'] for e in history))
+        self.assertEqual(history[-1]['detail']['receipt'], self.runtime.inspect(self.operation)['receipt'])
+
+    def test_history_is_scoped_to_one_operation(self):
+        other = self.runtime.propose('Other Kitchen', 2)
+        self.assertEqual([e['kind'] for e in self.runtime.history(other)], ['proposed'])
+        with self.assertRaises(KeyError):
+            self.runtime.history('missing')
+
 
 if __name__ == '__main__':
     unittest.main()

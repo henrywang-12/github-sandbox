@@ -43,6 +43,11 @@ inspect the returned operation, then pass its exact `request` to `approve`.
 
 ## Boundaries
 
+`Runtime.history(operation)` returns ordered, durable state events. The coordinator
+commits each event with its state change. This is an inspection log, not a
+tamper-proof audit system; existing databases have no reconstructed history for
+events that occurred before this feature was added.
+
 This is a single-process teaching model, not a production authorization service.
 The trusted local caller can approve or revoke operations; no user authentication
 is implemented. Anyone with database access can alter records. It assumes no
