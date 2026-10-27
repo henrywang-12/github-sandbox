@@ -133,6 +133,29 @@ class RuntimeTests(unittest.TestCase):
             self.runtime.cancel(self.operation)
         self.assertEqual(self.runtime.booking_count(), 1)
 
+    def test_crash_before_provider_requires_intervention_without_redispatch(self):
+        self.approve()
+        with self.assertRaises(RuntimeError):
+            self.runtime.execute(self.operation, fault='before_provider')
+        self.assertEqual(self.runtime.execute(self.operation)['state'], 'indeterminate')
+        self.assertEqual(self.runtime.booking_count(), 0)
+
+    def test_crash_after_provider_recovers_original_booking(self):
+        self.approve()
+        with self.assertRaises(RuntimeError):
+            self.runtime.execute(self.operation, fault='after_provider')
+        self.runtime.close()
+        self.runtime = Runtime(self.directory.name, clock=lambda: self.now)
+        self.assertEqual(self.runtime.execute(self.operation)['state'], 'verified')
+        self.assertEqual(self.runtime.booking_count(), 1)
+
+    def test_provider_rejection_is_known_failure_without_booking(self):
+        self.approve()
+        self.assertEqual(self.runtime.execute(self.operation, fault='provider_reject')['state'], 'failed')
+        with self.assertRaises(PermissionError):
+            self.runtime.execute(self.operation)
+        self.assertEqual(self.runtime.booking_count(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
