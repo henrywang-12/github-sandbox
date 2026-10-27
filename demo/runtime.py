@@ -1,6 +1,7 @@
 """Local intent execution experiment. No networking, credentials, or real bookings."""
 import argparse
 import json
+import math
 import sqlite3
 import time
 import uuid
@@ -29,8 +30,10 @@ class Runtime:
         self.provider.close()
 
     def propose(self, restaurant, people):
-        if not isinstance(restaurant, str) or not restaurant.strip():
-            raise ValueError('restaurant must be a nonempty string')
+        if (not isinstance(restaurant, str) or not restaurant.strip()
+                or len(restaurant.strip()) > 120
+                or any(ord(c) < 32 or ord(c) == 127 for c in restaurant)):
+            raise ValueError('restaurant must be 1–120 characters without control characters')
         if type(people) is not int or not 1 <= people <= 12:
             raise ValueError('people must be an integer from 1 to 12')
         operation = str(uuid.uuid4())
@@ -51,14 +54,18 @@ class Runtime:
 
     def approve(self, operation, reviewed_request, ttl=60):
         """Bind a simulated human decision to the exact stored proposal."""
-        if type(ttl) not in (int, float) or not 0 < ttl <= 3600:
+        if type(ttl) not in (int, float) or not math.isfinite(ttl) or not 0 < ttl <= 3600:
             raise ValueError('ttl must be positive and at most 3600 seconds')
         current = self.inspect(operation)
         if current['state'] != 'proposed':
             raise ValueError('only a new proposal may be approved')
         # Compare canonical encodings: Python equality conflates 1 and True.
         canonical = lambda value: json.dumps(value, sort_keys=True, separators=(',', ':'))
-        if canonical(reviewed_request) != canonical(current['request']):
+        try:
+            reviewed = canonical(reviewed_request)
+        except (ValueError, TypeError) as error:
+            raise ValueError('reviewed request must be JSON-compatible') from error
+        if reviewed != canonical(current['request']):
             raise ValueError('reviewed request differs from proposal')
         with self.db:
             self.db.execute('UPDATE operations SET state=?,expires=? WHERE id=?',
