@@ -25,7 +25,7 @@ The [comparative chapter](docs/ecosystem-native-agents.md), added October 27, 20
 - OpenAI, [Apps in ChatGPT launch](https://openai.com/index/introducing-apps-in-chatgpt/), October 6, 2025: conversational third-party app interfaces.
 - Google, [Connected Apps rollout](https://blog.google/innovation-and-ai/products/gemini-app/new-connected-apps-gemini/), September 23, 2026: additional partner integrations.
 
-Company announcements document reported capabilities and rollout claims, not independently measured comparative effectiveness. The architectural mechanism and concentration argument are the author's analysis; no source establishes inevitable monopoly or validates Walify's implementation.
+Company announcements document reported capabilities and rollout claims, not independently measured comparative effectiveness. The architectural mechanism and concentration argument are the author's analysis; no source establishes inevitable monopoly or validate Walify's implementation.
 
 ## Scope of the argument
 
