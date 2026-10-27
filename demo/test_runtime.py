@@ -113,6 +113,26 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.runtime.history('missing')
 
+    def test_cancel_before_dispatch_is_terminal_and_idempotent(self):
+        self.approve()
+        self.assertEqual(self.runtime.cancel(self.operation)['state'], 'cancelled')
+        self.runtime.cancel(self.operation)
+        self.assertEqual([e['kind'] for e in self.runtime.history(self.operation)].count('cancelled'), 1)
+        with self.assertRaises(PermissionError):
+            self.runtime.execute(self.operation)
+        self.assertEqual(self.runtime.booking_count(), 0)
+
+    def test_cancel_cannot_hide_unknown_or_verified_provider_effect(self):
+        self.approve()
+        self.runtime.execute(self.operation, lose_response=True)
+        with self.assertRaises(ValueError):
+            self.runtime.cancel(self.operation)
+        self.assertEqual(self.runtime.inspect(self.operation)['state'], 'indeterminate')
+        self.runtime.reconcile(self.operation)
+        with self.assertRaises(ValueError):
+            self.runtime.cancel(self.operation)
+        self.assertEqual(self.runtime.booking_count(), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

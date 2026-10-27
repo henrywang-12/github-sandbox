@@ -82,6 +82,19 @@ class Runtime:
             self.db.execute('UPDATE operations SET revoked=1 WHERE id=?', (operation,))
             self._event(operation, 'revoked')
 
+    def cancel(self, operation):
+        """Cancel only undispatched work; never relabel a completed or unknown effect."""
+        current = self.inspect(operation)
+        if current['state'] == 'cancelled':
+            return current
+        if current['state'] not in ('proposed', 'authorized'):
+            raise ValueError('dispatched work must be reconciled, not cancelled locally')
+        with self.db:
+            self.db.execute('UPDATE operations SET state=?,revoked=1 WHERE id=?',
+                            ('cancelled', operation))
+            self._event(operation, 'cancelled')
+        return self.inspect(operation)
+
     def _event(self, operation, kind, detail=None):
         # Caller owns the transaction, so each state change and event commit together.
         self.db.execute('INSERT INTO events(operation,kind,at,detail) VALUES(?,?,?,?)',
