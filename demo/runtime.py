@@ -186,6 +186,12 @@ class Runtime:
     def booking_count(self):
         return self.provider.execute('SELECT count(*) FROM bookings').fetchone()[0]
 
+    def list_operations(self, limit=20):
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError('limit must be an integer from 1 to 100')
+        return [self.inspect(row[0]) for row in self.db.execute(
+            'SELECT id FROM operations ORDER BY rowid DESC LIMIT ?', (limit,)).fetchall()]
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

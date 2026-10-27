@@ -20,6 +20,22 @@ is a new operation, not a replay.
 
 ## What to observe
 
+For individual operations, `python3 demo/cli.py --state-dir /tmp/my-intents`
+accepts `propose`, `list`, `inspect`, `approve`, `execute`, `reconcile`, `cancel`,
+`revoke`, and `history`. Run a command with `--help` for parameters. Results are
+JSON on stdout; runtime errors are JSON on stderr with exit code 2. Parser usage
+errors use argparse's ordinary text output. Approval remains a trusted local
+simulation, not user authentication.
+
+```sh
+python3 demo/cli.py --state-dir /tmp/my-intents propose --restaurant Example --people 2
+# Use the returned id in place of OPERATION below:
+python3 demo/cli.py --state-dir /tmp/my-intents inspect OPERATION
+python3 demo/cli.py --state-dir /tmp/my-intents approve OPERATION --request '{"restaurant":"Example","people":2}'
+python3 demo/cli.py --state-dir /tmp/my-intents execute OPERATION --lose-response
+python3 demo/cli.py --state-dir /tmp/my-intents reconcile OPERATION
+```
+
 1. A typed request proposes four seats at Example Kitchen.
 2. Dispatch without approval is blocked and creates no booking.
 3. The script simulates a human approving the exact stored request.
